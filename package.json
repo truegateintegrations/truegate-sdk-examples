@@ -1,0 +1,12 @@
+{
+  "name": "truegate-sdk-examples",
+  "private": true,
+  "devDependencies": {
+    "@biomejs/biome": "2.0.6"
+  },
+  "scripts": {
+    "fix": "bun run format && bun run lint",
+    "lint": "biome lint --write .",
+    "format": "biome format --write ."
+  }
+}
