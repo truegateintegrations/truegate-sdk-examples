@@ -32,6 +32,13 @@ const validity = {
   isSecurityCodeValid: false,
 }
 
+// Truegate does not allow resubmitting the same transactionId once the request
+// reaches the backend and gets rejected there (wrong CVV, declined card, etc.).
+// Once a valid submit() attempt has been made, the submit button must stay
+// disabled forever; a failed payment needs a brand new transactionId from your
+// backend, not a retry click.
+let isSubmitted = false
+
 const isFormValid = (): boolean => {
   return validity.isCardNumberValid && validity.isExpirationValid && validity.isSecurityCodeValid
 }
@@ -44,7 +51,7 @@ const subscribeToSdkEvents = (sdk: SdkInstancePublic, elements: FormElements): v
   }
 
   const updateSubmitButton = (): void => {
-    elements.submitButton.disabled = !isFormValid()
+    elements.submitButton.disabled = isSubmitted || !isFormValid()
   }
 
   sdk.on('INIT_PAYMENTS_LOADING', () => {
@@ -95,8 +102,7 @@ const subscribeToSdkEvents = (sdk: SdkInstancePublic, elements: FormElements): v
   })
 
   sdk.on('PAYMENT_ERROR', () => {
-    setStatus('Payment failed.')
-    elements.submitButton.disabled = false
+    setStatus('Payment failed. This transaction cannot be retried — request a new transactionId.')
   })
 
   sdk.on('PAYMENT_STATUS', (event) => {
@@ -112,12 +118,19 @@ const initCardPaymentForm = (elements: FormElements, submit: CardPaymentResponse
   elements.form.addEventListener('submit', async (event) => {
     event.preventDefault()
 
+    if (isSubmitted) {
+      return
+    }
+
     if (!isFormValid()) {
       setStatus('Please fix the highlighted fields before submitting.')
 
       return
     }
 
+    // Lock the button before the async call, not after — a second click queued
+    // while submit() is in flight must never reach the SDK.
+    isSubmitted = true
     elements.submitButton.disabled = true
     setStatus('Submitting…')
 
@@ -125,8 +138,7 @@ const initCardPaymentForm = (elements: FormElements, submit: CardPaymentResponse
       await submit({ cardHolderName: elements.cardHolderNameInput.value })
     } catch (error) {
       console.error(error)
-      setStatus('Submission failed.')
-      elements.submitButton.disabled = false
+      setStatus('Submission failed. This transaction cannot be retried — request a new transactionId.')
     }
   })
 }
