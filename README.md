@@ -8,13 +8,13 @@ covering every payment method and both ways of loading the SDK.
 
 ## Examples
 
-| Payment method                 | Vanilla TS  | React | Vue |
-|--------------------------------|-------------|-------|-----|
-| Card Payment                   | coming soon | —     | —   |
-| Apple Pay                      | coming soon | —     | —   |
-| Google Pay                     | coming soon | —     | —   |
-| PayPal                         | coming soon | —     | —   |
-| All methods at once (checkout) | coming soon | —     | —   |
+| Payment method                 | Vanilla TS                       | React | Vue |
+|---------------------------------|----------------------------------|-------|-----|
+| Card Payment                    | [ready](./vanilla/card-payment)  | —     | —   |
+| Apple Pay                       | coming soon                      | —     | —   |
+| Google Pay                      | coming soon                      | —     | —   |
+| PayPal                          | coming soon                      | —     | —   |
+| All methods at once (checkout)  | coming soon                      | —     | —   |
 
 React and Vue examples will follow later, in the same shape as the vanilla ones.
 
@@ -32,10 +32,9 @@ bun run dev
 
 How the SDK is loaded (`<script>` tag vs. `npm` import) and which environment it targets
 (`TEST`/`PROD`) are both toggled with a single constant in that example's `src/config.ts` — see
-`EXAMPLES_PLAN.md` for details.
+[`docs/prerequisites.md`](./docs/prerequisites.md) for details.
 
 ## Before you start
 
-Every example needs a `transactionId`, issued by your backend (Truegate's `/start` endpoint). In
-the examples it's filled in as a placeholder, `<your_transaction_id>` — replace it with a real
-value.
+Read [`docs/prerequisites.md`](./docs/prerequisites.md) — it covers `transactionId`, `TEST`/`PROD`,
+SRI, and the Node.js version each example needs.
