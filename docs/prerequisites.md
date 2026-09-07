@@ -9,6 +9,13 @@ Every example needs a `transactionId`. It's issued by **your own backend**, call
 `<your_transaction_id>`, in `src/config.ts`. Replace it with a real value before running the demo
 against live data.
 
+**A `transactionId` is single-use, and that limit applies across payment methods, not just within
+one.** Once a formally valid attempt reaches the backend and fails on one method (say, a declined
+card), you cannot then try a *different* method (Apple Pay, Google Pay, PayPal) with that same
+`transactionId` — it needs a fresh one from your backend, same as retrying the same method would.
+If you offer multiple payment methods on one page (see `all-payment-methods`), a failure on one
+must not silently leave the others usable with the now-consumed `transactionId`.
+
 ## `TEST` vs `PROD`
 
 `SDK_ENV` in `src/config.ts` controls which Truegate environment the SDK talks to. Not every

@@ -19,6 +19,15 @@ mistake:
    [`docs/prerequisites.md`](../../docs/prerequisites.md).
 6. If you loaded the SDK via `<script>` tag, **wait for `SDK_READY`** before constructing an
    instance — handled here in `src/helpers/truegate-sdk-loader.ts`.
+7. **A `transactionId` can only be submitted once the request reaches the backend.** If `submit()`
+   was called with formally valid data and the backend rejects it (wrong CVV, declined card), the
+   same `transactionId` cannot be resubmitted. This example permanently disables the submit button
+   the moment a valid `submit()` call is made — it never re-enables it, even on failure. Retrying
+   means asking your backend for a new `transactionId`, not re-clicking the button.
+
+   This limit is on the *transaction*, not the *method* — a failed card payment also rules out
+   Apple Pay, Google Pay, or PayPal on that same `transactionId`. See
+   [`docs/prerequisites.md`](../../docs/prerequisites.md).
 
 ## Run it
 
