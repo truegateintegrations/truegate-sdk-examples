@@ -144,10 +144,6 @@ const subscribeToSdkEvents = (sdk: SdkInstancePublic, elements: FormElements): v
     setStatus(elements, 'Submitting…')
   })
 
-  sdk.on('PAYMENT_CANCEL', () => {
-    setStatus(elements, 'Payment was cancelled.')
-  })
-
   sdk.on('PAYMENT_ERROR', () => {
     setStatus(elements, 'Payment failed. This transaction cannot be retried — request a new transactionId.')
     finishPaymentFlow(sdk, 'PAYMENT_ERROR')
