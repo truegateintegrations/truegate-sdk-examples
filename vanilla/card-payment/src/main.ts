@@ -66,8 +66,14 @@ const TERMINAL_PAYMENT_STATUSES = ['SUCCESS', 'FAILED']
 // so a merchant UI that only waits for a terminal status can hang forever after an
 // error. In a real integration this is where you'd close the checkout modal, redirect
 // back to your order page, stop polling your own backend, etc.
-const finishPaymentFlow = (reason: string): void => {
+//
+// destroy() belongs here, not on page unload: once the flow is over the transactionId
+// is spent either way, so nothing meaningful can ever happen on this instance again.
+// Calling it here is what actually stops a late/duplicate event from re-running this
+// same completion logic a second time.
+const finishPaymentFlow = (sdk: SdkInstancePublic, reason: string): void => {
   console.log(`Truegate: payment flow finished — ${reason}`)
+  sdk.destroy()
 }
 
 // Subscribe to every event BEFORE calling init()/initCardPayment() — some of
@@ -144,7 +150,7 @@ const subscribeToSdkEvents = (sdk: SdkInstancePublic, elements: FormElements): v
 
   sdk.on('PAYMENT_ERROR', () => {
     setStatus(elements, 'Payment failed. This transaction cannot be retried — request a new transactionId.')
-    finishPaymentFlow('PAYMENT_ERROR')
+    finishPaymentFlow(sdk, 'PAYMENT_ERROR')
   })
 
   sdk.on('PAYMENT_STATUS', (event) => {
@@ -154,7 +160,7 @@ const subscribeToSdkEvents = (sdk: SdkInstancePublic, elements: FormElements): v
       return
     }
 
-    finishPaymentFlow(`PAYMENT_STATUS: ${event.details.status}`)
+    finishPaymentFlow(sdk, `PAYMENT_STATUS: ${event.details.status}`)
   })
 }
 
@@ -194,7 +200,7 @@ const initCardPaymentForm = (elements: FormElements, submit: CardPaymentResponse
 const initCardPaymentDemo = async (): Promise<void> => {
   const elements = getFormElements()
 
-  elements.statusElement.textContent = 'Loading Truegate SDK…'
+  setStatus(elements, 'Loading Truegate SDK…')
 
   const TruegateSdk = await loadTruegateSdk()
 
@@ -222,10 +228,12 @@ const initCardPaymentDemo = async (): Promise<void> => {
 
   initCardPaymentForm(elements, submit)
 
-  // Best practice: release the SDK's internal listeners once the page is gone.
-  window.addEventListener('beforeunload', () => {
-    sdk.destroy()
-  })
+  // No destroy() on page unload here — see the comment on finishPaymentFlow() for why
+  // it's called from there instead. That only covers a flow that actually finishes,
+  // though: in a SPA where this widget can be unmounted before a terminal state is ever
+  // reached (e.g. the user closes the checkout modal mid-flow), you'd still need an
+  // unmount-time destroy() as a separate safety net — this static page has no such
+  // lifecycle to hang one off.
 }
 
 const main = async (): Promise<void> => {
