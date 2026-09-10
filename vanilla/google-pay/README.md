@@ -29,9 +29,9 @@ mistake:
    `PAYMENT_ERROR` and burns the `transactionId` over what was really just an impatient
    double-click, not a failed payment. **This is one of the most common Google Pay integration
    issues merchants run into in production.** `subscribeToSdkEvents()` calls
-   `setButtonEnabled(elements, false)` synchronously inside the `GOOGLE_PAY_BUTTON_CLICK` handler
-   — before the sheet actually opens —
-   and only re-enables it on `PAYMENT_CANCEL`. See `setButtonEnabled()` in `src/main.ts`.
+   `setButtonEnabled(elements, false)` synchronously inside the `GOOGLE_PAY_BUTTON_CLICK` handler —
+   before the sheet actually opens — and only re-enables it on `PAYMENT_CANCEL`. See
+   `setButtonEnabled()` in `src/main.ts`.
 8. **A payment flow ends one of two ways — handle both.** Either `PAYMENT_STATUS` reports a
    terminal status (`SUCCESS` or `FAILED`; `PENDING` means still in progress), or `PAYMENT_ERROR`
    fires on its own with no `PAYMENT_STATUS` to follow. `subscribeToSdkEvents()` routes both into
