@@ -23,13 +23,21 @@ mistake:
    "Apple Pay disabled for this merchant account" and "Apple Pay unavailable in this browser/device"
    (it only ever renders in Safari, on Apple hardware that supports it) — either way, treat it the
    same: hide the button, don't show it as broken.
-7. **A payment flow ends one of two ways — handle both.** Either `PAYMENT_STATUS` reports a
+7. **IMPORTANT — disable the button the instant it's tapped, not after.** Safari itself refuses a
+   second concurrent `ApplePaySession`: a fast double-click, or an impatient retry while the sheet
+   is still opening, throws `InvalidAccessError: Page already has an active payment session` — and
+   the SDK's own click handler doesn't catch it, so it surfaces as an uncaught error instead of
+   failing quietly. **This is one of the most common Apple Pay integration issues merchants run
+   into in production.** `subscribeToSdkEvents()` calls `setButtonEnabled(elements, false)`
+   synchronously inside the `APPLE_PAY_BUTTON_CLICK` handler — before the sheet actually opens —
+   and only re-enables it on `PAYMENT_CANCEL`. See `setButtonEnabled()` in `src/main.ts`.
+8. **A payment flow ends one of two ways — handle both.** Either `PAYMENT_STATUS` reports a
    terminal status (`SUCCESS` or `FAILED`; `PENDING` means still in progress), or `PAYMENT_ERROR`
    fires on its own with no `PAYMENT_STATUS` to follow. `subscribeToSdkEvents()` routes both into
    `finishPaymentFlow()` in `src/main.ts` — the common bug is handling only the terminal-status
    path and leaving the UI waiting forever after an error. See
    [`docs/prerequisites.md`](../../docs/prerequisites.md).
-8. If you offer multiple payment methods on one page (see `all-payment-methods`), remember that a
+9. If you offer multiple payment methods on one page (see `all-payment-methods`), remember that a
    `transactionId` is single-use *across* methods, not just within one. See
    [`docs/prerequisites.md`](../../docs/prerequisites.md).
 

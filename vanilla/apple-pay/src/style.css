@@ -36,3 +36,8 @@ body {
 .apple-pay-button {
   height: 64px;
 }
+
+.apple-pay-button.is-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}

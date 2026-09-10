@@ -6,20 +6,28 @@ const APPLE_PAY_BUTTON_ELEMENT_ID = 'apple-pay-button'
 
 interface PageElements {
   statusElement: HTMLParagraphElement
+  buttonContainer: HTMLDivElement
 }
 
 const getPageElements = (): PageElements => {
   const statusElement = document.querySelector<HTMLParagraphElement>('#status')
+  const buttonContainer = document.querySelector<HTMLDivElement>(`#${APPLE_PAY_BUTTON_ELEMENT_ID}`)
 
-  if (!statusElement) {
+  if (!statusElement || !buttonContainer) {
     throw new Error('Apple Pay demo: required DOM elements are missing')
   }
 
-  return { statusElement }
+  return { statusElement, buttonContainer }
 }
 
 const setStatus = (elements: PageElements, text: string): void => {
   elements.statusElement.textContent = text
+}
+
+// Dims the button and blocks clicks in place, without touching layout — a checkout
+// page shouldn't visibly jump every time the button's state changes.
+const setButtonEnabled = (elements: PageElements, isEnabled: boolean): void => {
+  elements.buttonContainer.classList.toggle('is-disabled', !isEnabled)
 }
 
 // The only statuses that end a payment flow — everything else on PAYMENT_STATUS
@@ -36,9 +44,15 @@ const TERMINAL_PAYMENT_STATUSES = ['SUCCESS', 'FAILED']
 // is spent either way, so nothing meaningful can ever happen on this instance again.
 // Calling it here is what actually stops a late/duplicate event from re-running this
 // same completion logic a second time.
-const finishPaymentFlow = (sdk: SdkInstancePublic, reason: string): void => {
+//
+// Disabling the button matters just as much: it's Apple's own <apple-pay-button>
+// element, so it stays in the DOM and fully clickable after destroy() — tapping it
+// would open a real Apple Pay sheet again with an SDK instance that's now deaf to
+// every event.
+const finishPaymentFlow = (sdk: SdkInstancePublic, elements: PageElements, reason: string): void => {
   console.log(`Truegate: payment flow finished — ${reason}`)
   sdk.destroy()
+  setButtonEnabled(elements, false)
 }
 
 // Subscribe to every event BEFORE calling init()/initApplePay() — some of them
@@ -54,7 +68,8 @@ const subscribeToSdkEvents = (sdk: SdkInstancePublic, elements: PageElements): v
 
   // Covers two different situations the SDK doesn't distinguish between: Apple Pay
   // disabled for this merchant account, and Apple Pay unavailable in this browser/device
-  // (it only renders in Safari on supporting Apple hardware). Either way, hide the button.
+  // (it only renders in Safari on supporting Apple hardware). Either way, treat it the
+  // same — no button was ever injected, so there's nothing to show but the status.
   sdk.on('APPLE_PAY_DISABLED', () => {
     setStatus(elements, 'Apple Pay is not available.')
   })
@@ -67,17 +82,32 @@ const subscribeToSdkEvents = (sdk: SdkInstancePublic, elements: PageElements): v
     setStatus(elements, 'Apple Pay ready — tap the button to pay.')
   })
 
+  // IMPORTANT — one of the most common Apple Pay issues merchants run into in production.
+  // Apple's own ApplePaySession already refuses a second concurrent session (it throws
+  // "InvalidAccessError: Page already has an active payment session" — a well-known
+  // problem for impatient double-clickers), but the SDK's click handler doesn't catch
+  // that, so it surfaces as an uncaught rejection instead of failing quietly. Disabling
+  // the button synchronously, before the sheet actually opens, keeps a fast second
+  // click from ever reaching it — same class of bug as CARD_PAYMENT_SUBMIT in the
+  // card-payment example, different trigger: there it's a second submit() call, here
+  // it's a second concurrent ApplePaySession.
   sdk.on('APPLE_PAY_BUTTON_CLICK', () => {
+    setButtonEnabled(elements, false)
     setStatus(elements, 'Opening Apple Pay…')
   })
 
+  // Unlike PAYMENT_ERROR/a terminal PAYMENT_STATUS, a cancel doesn't end the flow: the
+  // user dismissed Apple's sheet before the SDK ever attempted the transaction, so the
+  // transactionId is still unused. Re-enable the button and don't destroy() — the point
+  // is to let them tap it again.
   sdk.on('PAYMENT_CANCEL', () => {
-    setStatus(elements, 'Payment was cancelled.')
+    setButtonEnabled(elements, true)
+    setStatus(elements, 'Payment was cancelled. You can try again.')
   })
 
   sdk.on('PAYMENT_ERROR', () => {
     setStatus(elements, 'Payment failed. This transaction cannot be retried — request a new transactionId.')
-    finishPaymentFlow(sdk, 'PAYMENT_ERROR')
+    finishPaymentFlow(sdk, elements, 'PAYMENT_ERROR')
   })
 
   sdk.on('PAYMENT_STATUS', (event) => {
@@ -87,7 +117,7 @@ const subscribeToSdkEvents = (sdk: SdkInstancePublic, elements: PageElements): v
       return
     }
 
-    finishPaymentFlow(sdk, `PAYMENT_STATUS: ${event.details.status}`)
+    finishPaymentFlow(sdk, elements, `PAYMENT_STATUS: ${event.details.status}`)
   })
 }
 
