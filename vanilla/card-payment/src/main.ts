@@ -163,7 +163,7 @@ const initCardPaymentForm = (elements: FormElements, submit: CardPaymentResponse
   })
 }
 
-const main = async (): Promise<void> => {
+const initCardPaymentDemo = async (): Promise<void> => {
   const elements = getFormElements()
 
   elements.statusElement.textContent = 'Loading Truegate SDK…'
@@ -200,12 +200,18 @@ const main = async (): Promise<void> => {
   })
 }
 
-main().catch((error) => {
-  console.error(error)
+const main = async (): Promise<void> => {
+  try {
+    await initCardPaymentDemo()
+  } catch (error) {
+    console.error(error)
 
-  const statusElement = document.querySelector<HTMLParagraphElement>('#status')
+    const statusElement = document.querySelector<HTMLParagraphElement>('#status')
 
-  if (statusElement) {
-    statusElement.textContent = 'Something went wrong while loading the demo.'
+    if (statusElement) {
+      statusElement.textContent = 'Something went wrong while loading the demo.'
+    }
   }
-})
+}
+
+main()
