@@ -1,5 +1,5 @@
-import type { TruegateSdkConstructor } from '../types/vendors/truegate-sdk'
 import { SDK_ENV, SDK_LOADING_MODE, SDK_SCRIPT_INTEGRITY, SDK_VERSION } from '../config'
+import type { TruegateSdkConstructor } from '../types/vendors/truegate-sdk'
 
 declare global {
   interface Window {
