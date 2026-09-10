@@ -43,6 +43,19 @@ const isFormValid = (): boolean => {
   return validity.isCardNumberValid && validity.isExpirationValid && validity.isSecurityCodeValid
 }
 
+// The only statuses that end a payment flow — everything else on PAYMENT_STATUS
+// (e.g. PENDING) just means "still in progress".
+const TERMINAL_PAYMENT_STATUSES = ['SUCCESS', 'FAILED']
+
+// A payment flow ends one of two ways: a non-pending PAYMENT_STATUS, or PAYMENT_ERROR.
+// Both must be handled — PAYMENT_ERROR does not come with a follow-up PAYMENT_STATUS,
+// so a merchant UI that only waits for a terminal status can hang forever after an
+// error. In a real integration this is where you'd close the checkout modal, redirect
+// back to your order page, stop polling your own backend, etc.
+const finishPaymentFlow = (reason: string): void => {
+  console.log(`Truegate: payment flow finished — ${reason}`)
+}
+
 // Subscribe to every event BEFORE calling init()/initCardPayment() — some of
 // them (e.g. validation results) can fire immediately once the form loads.
 const subscribeToSdkEvents = (sdk: SdkInstancePublic, elements: FormElements): void => {
@@ -103,10 +116,17 @@ const subscribeToSdkEvents = (sdk: SdkInstancePublic, elements: FormElements): v
 
   sdk.on('PAYMENT_ERROR', () => {
     setStatus('Payment failed. This transaction cannot be retried — request a new transactionId.')
+    finishPaymentFlow('PAYMENT_ERROR')
   })
 
   sdk.on('PAYMENT_STATUS', (event) => {
     setStatus(`Payment status: ${event.details.status}`)
+
+    if (!TERMINAL_PAYMENT_STATUSES.includes(event.details.status)) {
+      return
+    }
+
+    finishPaymentFlow(`PAYMENT_STATUS: ${event.details.status}`)
   })
 }
 

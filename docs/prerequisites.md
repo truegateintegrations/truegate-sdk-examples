@@ -16,6 +16,19 @@ card), you cannot then try a *different* method (Apple Pay, Google Pay, PayPal) 
 If you offer multiple payment methods on one page (see `all-payment-methods`), a failure on one
 must not silently leave the others usable with the now-consumed `transactionId`.
 
+## Ending the payment flow: two exits, not one
+
+A payment flow finishes one of two ways, and both must close out your checkout UI (modal,
+redirect, stop polling — whatever your integration does):
+
+1. **`PAYMENT_STATUS` with a non-pending status.** `PENDING` means "still in progress" — keep
+   waiting. Anything else (`SUCCESS`, `FAILED`) is terminal, and not all terminal statuses are positive.
+2. **`PAYMENT_ERROR`.** This is a dead end on its own — no `PAYMENT_STATUS` event follows it.
+
+The common mistake is handling only the first exit: a merchant page that waits for a terminal
+`PAYMENT_STATUS` and ignores `PAYMENT_ERROR` will wait forever once an error actually occurs,
+because no status is ever coming. Subscribe to both, and treat both as "the flow is over."
+
 ## `TEST` vs `PROD`
 
 `SDK_ENV` in `src/config.ts` controls which Truegate environment the SDK talks to. Not every
