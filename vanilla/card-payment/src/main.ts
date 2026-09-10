@@ -26,21 +26,35 @@ const getFormElements = (): FormElements => {
   return { form, cardHolderNameInput, submitButton, statusElement }
 }
 
+const setStatus = (elements: FormElements, text: string): void => {
+  elements.statusElement.textContent = text
+}
+
 const validity = {
   isCardNumberValid: false,
   isExpirationValid: false,
   isSecurityCodeValid: false,
 }
 
-// Truegate does not allow resubmitting the same transactionId once the request
-// reaches the backend and gets rejected there (wrong CVV, declined card, etc.).
-// Once a valid submit() attempt has been made, the submit button must stay
-// disabled forever; a failed payment needs a brand new transactionId from your
-// backend, not a retry click.
+// Truegate does not allow resubmitting the same transactionId once a submit()
+// attempt actually reaches the backend and gets rejected there (wrong CVV,
+// declined card, etc.) — once that happens, the submit button must stay
+// disabled forever; a failed payment needs a brand new transactionId, not a
+// retry click.
+//
+// A missing/invalid `cardHolderName` is a different case: submit() rejects
+// with INVALID_ARGUMENTS synchronously, before it ever emits CARD_PAYMENT_SUBMIT
+// or talks to the backend, so the transactionId is still unused. That's why this
+// flag is set from the CARD_PAYMENT_SUBMIT event below, not from calling submit()
+// — CARD_PAYMENT_SUBMIT only fires once the SDK has actually started sending data.
 let isSubmitted = false
 
 const isFormValid = (): boolean => {
   return validity.isCardNumberValid && validity.isExpirationValid && validity.isSecurityCodeValid
+}
+
+const updateSubmitButton = (elements: FormElements): void => {
+  elements.submitButton.disabled = isSubmitted || !isFormValid()
 }
 
 // The only statuses that end a payment flow — everything else on PAYMENT_STATUS
@@ -59,47 +73,53 @@ const finishPaymentFlow = (reason: string): void => {
 // Subscribe to every event BEFORE calling init()/initCardPayment() — some of
 // them (e.g. validation results) can fire immediately once the form loads.
 const subscribeToSdkEvents = (sdk: SdkInstancePublic, elements: FormElements): void => {
-  const setStatus = (text: string): void => {
-    elements.statusElement.textContent = text
-  }
-
-  const updateSubmitButton = (): void => {
-    elements.submitButton.disabled = isSubmitted || !isFormValid()
-  }
-
   sdk.on('INIT_PAYMENTS_LOADING', () => {
     console.log('Truegate: initializing payment methods…')
   })
 
   sdk.on('INIT_PAYMENTS_ERROR', () => {
-    setStatus('Failed to initialize Truegate payments.')
+    setStatus(elements, 'Failed to initialize Truegate payments.')
   })
 
   sdk.on('CARD_PAYMENT_DISABLED', () => {
-    setStatus('Card payment is disabled for this account.')
+    setStatus(elements, 'Card payment is disabled for this account.')
   })
 
   sdk.on('INIT_CARD_PAYMENT_ERROR', () => {
-    setStatus('Failed to load the card payment form.')
+    setStatus(elements, 'Failed to load the card payment form.')
   })
 
   sdk.on('CARD_PAYMENT_READY', () => {
-    setStatus('Card form ready — fill in the details.')
+    setStatus(elements, 'Card form ready — fill in the details.')
   })
 
   sdk.on('CARD_NUMBER_VALIDATION_RESULT', (event) => {
     validity.isCardNumberValid = event.details.isValid
-    updateSubmitButton()
+    updateSubmitButton(elements)
+  })
+
+  // *_VALIDATION_ERRORS carries the reason(s) behind an invalid field — use it to
+  // show a real message next to the field instead of just disabling the submit button.
+  sdk.on('CARD_NUMBER_VALIDATION_ERRORS', (event) => {
+    console.log('Card number validation errors:', event.details.errors)
   })
 
   sdk.on('CARD_EXPIRATION_VALIDATION_RESULT', (event) => {
     validity.isExpirationValid = event.details.isValid
-    updateSubmitButton()
+    updateSubmitButton(elements)
+  })
+
+  sdk.on('CARD_EXPIRATION_VALIDATION_ERRORS', (event) => {
+    console.log('Card expiration validation errors:', event.details.errors)
   })
 
   sdk.on('CARD_SECURITY_CODE_VALIDATION_RESULT', (event) => {
     validity.isSecurityCodeValid = event.details.isValid
-    updateSubmitButton()
+    updateSubmitButton(elements)
+  })
+
+  sdk.on('CARD_SECURITY_CODE_VALIDATION_ERRORS', (event) => {
+    console.log('Card security code validation errors:', event.details.errors)
   })
 
   sdk.on('CARD_NUMBER_PROVIDER', (event) => {
@@ -110,17 +130,25 @@ const subscribeToSdkEvents = (sdk: SdkInstancePublic, elements: FormElements): v
     console.log('Card details:', event.details)
   })
 
+  // Fires once submit() has passed its own argument checks and actually started
+  // sending data — see the comment on `isSubmitted` above for why the lock lives here.
+  sdk.on('CARD_PAYMENT_SUBMIT', () => {
+    isSubmitted = true
+    updateSubmitButton(elements)
+    setStatus(elements, 'Submitting…')
+  })
+
   sdk.on('PAYMENT_CANCEL', () => {
-    setStatus('Payment was cancelled.')
+    setStatus(elements, 'Payment was cancelled.')
   })
 
   sdk.on('PAYMENT_ERROR', () => {
-    setStatus('Payment failed. This transaction cannot be retried — request a new transactionId.')
+    setStatus(elements, 'Payment failed. This transaction cannot be retried — request a new transactionId.')
     finishPaymentFlow('PAYMENT_ERROR')
   })
 
   sdk.on('PAYMENT_STATUS', (event) => {
-    setStatus(`Payment status: ${event.details.status}`)
+    setStatus(elements, `Payment status: ${event.details.status}`)
 
     if (!TERMINAL_PAYMENT_STATUSES.includes(event.details.status)) {
       return
@@ -131,10 +159,6 @@ const subscribeToSdkEvents = (sdk: SdkInstancePublic, elements: FormElements): v
 }
 
 const initCardPaymentForm = (elements: FormElements, submit: CardPaymentResponse['submit']): void => {
-  const setStatus = (text: string): void => {
-    elements.statusElement.textContent = text
-  }
-
   elements.form.addEventListener('submit', async (event) => {
     event.preventDefault()
 
@@ -143,22 +167,26 @@ const initCardPaymentForm = (elements: FormElements, submit: CardPaymentResponse
     }
 
     if (!isFormValid()) {
-      setStatus('Please fix the highlighted fields before submitting.')
+      setStatus(elements, 'Please fix the highlighted fields before submitting.')
 
       return
     }
-
-    // Lock the button before the async call, not after — a second click queued
-    // while submit() is in flight must never reach the SDK.
-    isSubmitted = true
-    elements.submitButton.disabled = true
-    setStatus('Submitting…')
 
     try {
       await submit({ cardHolderName: elements.cardHolderNameInput.value })
     } catch (error) {
       console.error(error)
-      setStatus('Submission failed. This transaction cannot be retried — request a new transactionId.')
+
+      // If isSubmitted is still false, CARD_PAYMENT_SUBMIT never fired — submit()
+      // rejected on its own argument check (INVALID_ARGUMENTS) before touching the
+      // backend, so the transactionId is untouched and this form can be retried.
+      if (!isSubmitted) {
+        setStatus(elements, 'Submission failed. Please check your input and try again.')
+
+        return
+      }
+
+      setStatus(elements, 'Submission failed. This transaction cannot be retried — request a new transactionId.')
     }
   })
 }
