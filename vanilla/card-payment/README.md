@@ -29,7 +29,7 @@ mistake:
    Apple Pay, Google Pay, or PayPal on that same `transactionId`. See
    [`docs/prerequisites.md`](../../docs/prerequisites.md).
 8. **A payment flow ends one of two ways — handle both.** Either `PAYMENT_STATUS` reports a
-   terminal status (`SUCCESS`, `FAILED` — `PENDING` means still in progress), or `PAYMENT_ERROR`
+   terminal status (`SUCCESS` or `FAILED`; `PENDING` means still in progress), or `PAYMENT_ERROR`
    fires on its own with no `PAYMENT_STATUS` to follow. `subscribeToSdkEvents()` routes both into
    `finishPaymentFlow()` in `src/main.ts` — the common bug is handling only the terminal-status
    path and leaving the UI waiting forever after an error. See
