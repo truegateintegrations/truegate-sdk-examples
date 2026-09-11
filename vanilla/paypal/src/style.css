@@ -1,0 +1,43 @@
+html {
+  box-sizing: border-box;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 32px;
+  display: flex;
+  justify-content: center;
+}
+
+.page {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.status {
+  min-height: 1.5em;
+  opacity: 0.75;
+}
+
+.pay-pal-button {
+  min-height: 48px;
+}
+
+.pay-pal-button.is-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
