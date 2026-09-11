@@ -3,18 +3,15 @@
 Copy-paste-ready integration examples for [`@truegate/sdk-core`](https://www.npmjs.com/package/@truegate/sdk-core),
 covering every payment method and both ways of loading the SDK.
 
-> 🚧 This repository is still being filled in. The architecture and the list of examples are
-> tracked in [`EXAMPLES_PLAN.md`](./EXAMPLES_PLAN.md), along with open questions.
-
 ## Examples
 
-| Payment method                 | Vanilla TS                       | React | Vue |
-|---------------------------------|----------------------------------|-------|-----|
-| Card Payment                    | [ready](./vanilla/card-payment)  | —     | —   |
-| Apple Pay                       | coming soon                      | —     | —   |
-| Google Pay                      | coming soon                      | —     | —   |
-| PayPal                          | coming soon                      | —     | —   |
-| All methods at once (checkout)  | coming soon                      | —     | —   |
+| Payment method                 | Vanilla TS                                | React | Vue |
+|---------------------------------|--------------------------------------------|-------|-----|
+| Card Payment                    | [ready](./vanilla/card-payment)           | —     | —   |
+| Apple Pay                       | [ready](./vanilla/apple-pay)              | —     | —   |
+| Google Pay                      | [ready](./vanilla/google-pay)             | —     | —   |
+| PayPal                          | [ready](./vanilla/paypal)                 | —     | —   |
+| All methods at once (checkout)  | [ready](./vanilla/all-payment-methods)    | —     | —   |
 
 React and Vue examples will follow later, in the same shape as the vanilla ones.
 
