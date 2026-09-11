@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>Truegate SDK — All Payment Methods example</title>
+    <link
+      rel="stylesheet"
+      href="/src/style.css"
+    />
+  </head>
+  <body>
+    <main class="page">
+      <h1>Checkout</h1>
+      <p
+        id="status"
+        class="status"
+      >
+        Loading…
+      </p>
+
+      <div class="wallet-buttons">
+        <!-- The SDK injects each provider's own button/widget into these containers. -->
+        <div
+          id="apple-pay-button"
+          class="wallet-button"
+        ></div>
+        <div
+          id="google-pay-button"
+          class="wallet-button"
+        ></div>
+        <div
+          id="pay-pal-button"
+          class="wallet-button"
+        ></div>
+      </div>
+
+      <div class="divider">or pay with card</div>
+
+      <form
+        id="card-payment-form"
+        class="card-form"
+      >
+        <label class="field">
+          <span>Cardholder name</span>
+          <input
+            id="card-holder-name"
+            name="cardHolderName"
+            type="text"
+            autocomplete="cc-name"
+            required
+          />
+        </label>
+
+        <label class="field">
+          <span>Card number</span>
+          <!-- The SDK injects its own iframe/input into this container. -->
+          <div
+            id="card-number"
+            class="sdk-field"
+          ></div>
+        </label>
+
+        <div class="field-row">
+          <label class="field">
+            <span>Expiration</span>
+            <div
+              id="card-expiration"
+              class="sdk-field"
+            ></div>
+          </label>
+
+          <label class="field">
+            <span>CVC</span>
+            <div
+              id="card-cvv"
+              class="sdk-field"
+            ></div>
+          </label>
+        </div>
+
+        <button
+          id="submit-button"
+          type="submit"
+          disabled
+        >
+          Pay
+        </button>
+      </form>
+    </main>
+
+    <script
+      type="module"
+      src="/src/main.ts"
+    ></script>
+  </body>
+</html>
