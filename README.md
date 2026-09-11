@@ -5,13 +5,13 @@ covering every payment method and both ways of loading the SDK.
 
 ## Examples
 
-| Payment method                 | Vanilla TS                                | React | Vue |
-|---------------------------------|--------------------------------------------|-------|-----|
-| Card Payment                    | [ready](./vanilla/card-payment)           | —     | —   |
-| Apple Pay                       | [ready](./vanilla/apple-pay)              | —     | —   |
-| Google Pay                      | [ready](./vanilla/google-pay)             | —     | —   |
-| PayPal                          | [ready](./vanilla/paypal)                 | —     | —   |
-| All methods at once (checkout)  | [ready](./vanilla/all-payment-methods)    | —     | —   |
+| Payment method                 | Vanilla TS                             | React | Vue |
+|--------------------------------|----------------------------------------|-------|-----|
+| Card Payment                   | [ready](./vanilla/card-payment)        | —     | —   |
+| Apple Pay                      | [ready](./vanilla/apple-pay)           | —     | —   |
+| Google Pay                     | [ready](./vanilla/google-pay)          | —     | —   |
+| PayPal                         | [ready](./vanilla/paypal)              | —     | —   |
+| All methods at once (checkout) | [ready](./vanilla/all-payment-methods) | —     | —   |
 
 React and Vue examples will follow later, in the same shape as the vanilla ones.
 
