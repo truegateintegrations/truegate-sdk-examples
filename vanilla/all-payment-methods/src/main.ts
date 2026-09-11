@@ -94,7 +94,7 @@ let isTransactionConsumed = false
 // a user can click a method that became ready early (setting its own status, e.g.
 // "Opening Apple Pay…") while a slower method is still loading. Guards the generic
 // "choose a method" status set once loading finishes from clobbering that.
-let isUserStartedPaying = false
+let isPaymentStarted = false
 
 const updateCardSubmitButton = (elements: PageElements): void => {
   elements.cardSubmitButton.disabled = isTransactionConsumed || !isCardFormValid()
@@ -261,7 +261,7 @@ const subscribeToCardPaymentEvents = (sdk: SdkInstancePublic, elements: PageElem
   // From this point on the transactionId is genuinely at risk, so lock everything the
   // same as a real failure would — but don't destroy() yet, the outcome hasn't arrived.
   sdk.on('CARD_PAYMENT_SUBMIT', () => {
-    isUserStartedPaying = true
+    isPaymentStarted = true
     lockAllPaymentButtons(elements)
     setStatus(elements, 'Submitting card details…')
   })
@@ -286,7 +286,7 @@ const subscribeToApplePayEvents = (sdk: SdkInstancePublic, elements: PageElement
   // for why a fast double-click needs this. Only this one button locks; a click on Apple
   // Pay says nothing yet about whether the transactionId will end up consumed.
   sdk.on('APPLE_PAY_BUTTON_CLICK', () => {
-    isUserStartedPaying = true
+    isPaymentStarted = true
     setButtonEnabled(elements.applePayButtonContainer, false)
     setStatus(elements, 'Opening Apple Pay…')
   })
@@ -311,7 +311,7 @@ const subscribeToGooglePayEvents = (sdk: SdkInstancePublic, elements: PageElemen
   // sheet actually opens: a double-click here is reported as a genuine PAYMENT_ERROR,
   // not a cancellation.
   sdk.on('GOOGLE_PAY_BUTTON_CLICK', () => {
-    isUserStartedPaying = true
+    isPaymentStarted = true
     setButtonEnabled(elements.googlePayButtonContainer, false)
     setStatus(elements, 'Opening Google Pay…')
   })
@@ -333,7 +333,7 @@ const subscribeToPayPalEvents = (sdk: SdkInstancePublic, elements: PageElements)
   })
 
   sdk.on('PAY_PAL_BUTTON_CLICK', () => {
-    isUserStartedPaying = true
+    isPaymentStarted = true
     setStatus(elements, 'Opening PayPal…')
   })
 }
@@ -452,7 +452,7 @@ const initAllPaymentMethodsDemo = async (): Promise<void> => {
     initPayPalMethod(sdk),
   ])
 
-  if (!isUserStartedPaying) {
+  if (!isPaymentStarted) {
     setStatus(elements, "Choose how you'd like to pay.")
   }
 
